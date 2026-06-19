@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Tab — $1 buys one square</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     ============================================================ */
+  :root{
+    --page-bg:    #F7F8FA;
+    --card-bg:    #FFFFFF;
+    --border:     #E4E7EC;
+    --border-soft:#EEF1F5;
+    --text:       #101828;
+    --text-soft:  #667085;
+    --text-faint: #98A2B3;
+    --accent:     #2563EB;
+    --accent-dk:  #1D4ED8;
+    --accent-soft:#EFF4FF;
+    --success:    #16A34A;
+    --danger:     #DC2626;
+    --cell-empty: #F2F4F7;
+    --cell-grid:  #E7E9ED;
+    --radius:     10px;
+    --radius-sm:  7px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --sidebar-w: 224px;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--page-bg);
+    overflow: hidden;
+  }
+  button{ font-family: inherit; cursor: pointer; }
+  input{ font-family: inherit; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- App shell ---------- */
+  .app-shell{ display:flex; height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--card-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 14px;
+  }
+  .brand{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 18px;
+    font-weight: 800;
+    font-size: 16px;
+  }
+  .brand .dot{
+    width: 10px; height: 10px; border-radius: 3px;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .nav{ display: flex; flex-direction: column; gap: 2px; }
+  .nav-btn{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-soft);
+  }
+  .nav-btn svg{ width: 18px; height: 18px; flex-shrink: 0; }
+  .nav-btn:hover{ background: var(--border-soft); color: var(--text); }
+  .nav-btn.active{ background: var(--accent-soft); color: var(--accent); }
+  .sidebar-spacer{ flex: 1; }
+  .sidebar-foot{
+    border-top: 1px solid var(--border-soft);
+    padding-top: 12px;
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+
+  /* ---------- Main column ---------- */
+  .main-col{ flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+
+  .topbar{
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 20px;
+    flex-shrink: 0;
+  }
+  .topbar-left{ display:flex; align-items:center; gap: 8px; font-size: 13px; color: var(--text-soft); }
+  .live-dot{ width:7px; height:7px; border-radius:50%; background: var(--success); flex-shrink:0; }
+  .topbar-right{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
+
+  .btn-outline{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .btn-outline:hover{ border-color: var(--accent); color: var(--accent); }
+  .btn-outline.active{ background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  .btn-primary{
+    background: var(--accent);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary:hover{ background: var(--accent-dk); }
+  .btn-primary:disabled{ background: var(--text-faint); cursor: not-allowed; }
+
+  .btn-text{
+    background: transparent; border: none; color: var(--accent);
+    font-size: 13px; font-weight: 600; padding: 6px 8px;
+  }
+  .btn-text:hover{ text-decoration: underline; }
+
+  .badge{
+    background: rgba(255,255,255,0.25);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .wallet-chip{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--border-soft);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--text-soft);
+  }
+  .wallet-chip strong{ color: var(--success); font-weight: 700; }
+
+  .icon-btn{
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .icon-btn:hover{ border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- Ticker ---------- */
+  .ticker-wrap{
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .ticker-track{
+    display: inline-flex;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--text-faint);
+    animation: tickerScroll 38s linear infinite;
+    padding-left: 100%;
+  }
+  .ticker-wrap:hover .ticker-track{ animation-play-state: paused; }
+  .ticker-track .seg{ margin-right: 28px; }
+  .ticker-track .seg strong{ color: var(--text-soft); }
+  @keyframes tickerScroll{
+    0%{ transform: translateX(0); }
+    100%{ transform: translateX(-100%); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticker-track{ animation: none; padding-left: 0; }
+  }
+
+  /* ---------- Content / views ---------- */
+  .content{ flex: 1; overflow: auto; padding: 22px; }
+  .view{ display: none; }
+  .view.active{ display: block; }
+
+  .view-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 14px; }
+  .view-head h1{ font-size: 18px; font-weight: 700; margin: 0; }
+  .view-head .sub{ font-size: 12px; color: var(--text-faint); }
+
+  .canvas-card{
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: inline-block;
+    max-width: 100%;
+  }
+  .canvas-scroll{
+    overflow: auto;
+    max-height: calc(100vh - 230px);
+    background: var(--cell-grid);
+    border-radius: var(--radius-sm);
+    line-height: 0;
+  }
+  #pixelCanvas{ display:block; cursor: cell; }
+
+  .canvas-stats{
+    display: flex;
+    gap: 22px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .stat{ min-width: 70px; }
+  .stat .label{ font-size: 11px; color: var(--text-faint); display:block; margin-bottom: 2px; }
+  .stat .value{ font-size: 19px; font-weight: 700; }
+  .stat .value.accent{ color: var(--accent); }
+
+  /* ---------- Zoom control ---------- */
+  .zoom-ctl{
+    position: absolute;
+    left: 28px;
+    bottom: 28px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(16,24,40,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 6px;
+    z-index: 5;
+  }
+  .zoom-ctl button{
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    font-size: 15px;
+    font-weight: 700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .zoom-ctl button:hover{ background: var(--border-soft); color: var(--accent); }
+  .zoom-slider-wrap{
+    width: 26px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .zoom-slider-wrap input[type="range"]{
+    width: 90px;
+    transform: rotate(-90deg);
+    accent-color: var(--accent);
+  }
+
+  /* ---------- Activity / Leaderboard lists ---------- */
+  .panel-card{
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 13px;
+  }
+  .row:last-child{ border-bottom: none; }
+  .row .swatch{ width: 16px; height: 16px; border-radius: 4px; flex-shrink:0; border: 1px solid rgba(0,0,0,0.08); }
+  .row .main{ flex: 1; color: var(--text); }
+  .row .main strong{ font-weight: 600; }
+  .row .main .cap{ color: var(--text-soft); font-style: italic; }
+  .row .meta{ color: var(--text-faint); font-size: 12px; white-space: nowrap; }
+  .rank-chip{
+    width: 22px; height:22px; border-radius:6px;
+    background: var(--border-soft); color: var(--text-soft);
+    font-size: 11px; font-weight: 700;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .row.top .rank-chip{ background: var(--accent-soft); color: var(--accent); }
+  .empty-state{
+    padding: 46px 20px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+  }
+
+  /* ---------- Tooltip ---------- */
+  #pdcTooltip{
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    background: var(--text);
+    color: #fff;
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    max-width: 220px;
+    line-height: 1.4;
+    display: none;
+    box-shadow: 0 4px 10px rgba(16,24,40,0.18);
+  }
+  #pdcTooltip .swatch{
+    display:inline-block; width:9px; height:9px; border-radius:2px;
+    margin-right:6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  /* ---------- Cart bar ---------- */
+  .cart-bar{
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translate(-50%, 0);
+    background: var(--text);
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 10px 10px 18px;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 10px 24px rgba(16,24,40,0.25);
+    z-index: 70;
+    font-size: 13px;
+  }
+  .cart-bar.show{ display: flex; }
+  .cart-bar strong{ font-weight: 700; }
+  .cart-bar .cart-total{ color: #B9D3FF; }
+  .cart-bar button{ border-radius: 999px; font-size: 13px; font-weight: 600; padding: 8px 14px; border: none; }
+  .cart-bar .clear-btn{ background: transparent; color: #C7CAD1; }
+  .cart-bar .clear-btn:hover{ color: #fff; }
+  .cart-bar .checkout-btn{ background: var(--accent); color: #fff; }
+  .cart-bar .checkout-btn:hover{ background: var(--accent-dk); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position: fixed; inset: 0;
+    background: rgba(16,24,40,0.45);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100; padding: 16px;
+  }
+  .modal-overlay.open{ display: flex; }
+  .modal{
+    background: var(--card-bg);
+    border-radius: 14px;
+    width: 100%; max-width: 380px;
+    padding: 22px;
+    box-shadow: 0 20px 50px rgba(16,24,40,0.25);
+  }
+  .modal h2{ font-size: 17px; margin: 0 0 2px; }
+  .modal .sub{ font-size: 12px; color: var(--text-faint); margin: 0 0 16px; }
+  .field{ margin-bottom: 14px; }
+  .field label{ display:block; font-size: 11px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; }
+  .field input[type="text"]{
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 11px;
+    font-size: 14px;
+    background: var(--card-bg);
+  }
+  .field input[type="text"]:focus{ border-color: var(--accent); }
+  .field input.invalid{ border-color: var(--danger); }
+  .error-text{ font-size: 11px; color: var(--danger); margin-top: 5px; min-height: 14px; }
+
+  .swatches{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .swatch-btn{ width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border); padding: 0; }
+  .swatch-btn:hover{ transform: scale(1.12); }
+  .swatch-btn.selected{ outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .color-row{ display: flex; gap: 8px; align-items: center; }
+  .color-row input[type="color"]{ width: 42px; height: 36px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 2px; background: #fff; }
+  .color-row input[type="text"]{ flex: 1; text-transform: uppercase; }
+
+  .modal-actions{ display: flex; gap: 10px; margin-top: 18px; }
+  .btn-ghost{ background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; font-size: 13px; font-weight: 500; }
+  .btn-ghost:hover{ border-color: var(--text-soft); }
+  .btn-confirm{
+    flex: 1; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-sm); padding: 11px 14px; font-size: 13px; font-weight: 700;
+  }
+  .btn-confirm:hover{ background: var(--accent-dk); }
+  .btn-confirm:disabled{ background: var(--text-faint); cursor: not-allowed; }
+
+  @media (prefers-reduced-motion: reduce){ .swatch-btn:hover{ transform: none; } }
+
+  /* ---------- Toast (tier-up / completion) ---------- */
+  #toastStack{
+    position: fixed; top: 76px; right: 20px; z-index: 200;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast{
+    background: var(--text);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    min-width: 220px;
+    box-shadow: 0 10px 24px rgba(16,24,40,0.3);
+    animation: toastIn 0.35s ease forwards, toastOut 0.35s ease forwards 2.4s;
+  }
+  .toast strong{ display:block; font-size: 13px; margin-bottom: 2px; }
+  .toast span{ color: #C7CAD1; font-size: 12px; }
+  @keyframes toastIn{ from{ opacity:0; transform: translateX(30px); } to{ opacity:1; transform: translateX(0); } }
+  @keyframes toastOut{ from{ opacity:1; } to{ opacity:0; } }
+  @media (prefers-reduced-motion: reduce){
+    .toast{ animation: toastFade 2.8s ease forwards; }
+    @keyframes toastFade{ 0%{opacity:0;} 10%{opacity:1;} 85%{opacity:1;} 100%{opacity:0;} }
+  }
+
+  /* ============================================================
+     DEV MODE MODULE — styles (only used by dev-mode-module script)
+     ============================================================ */
+  #pdcDevToggle{
+    position: fixed; bottom: 16px; right: 16px; z-index: 60;
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--card-bg);
+    opacity: 0.5; font-size: 16px;
+    box-shadow: 0 2px 8px rgba(16,24,40,0.1);
+  }
+  #pdcDevToggle:hover{ opacity: 1; }
+  #pdcDevPanel{
+    position: fixed; bottom: 64px; right: 16px; z-index: 61;
+    width: 300px; max-height: 70vh; overflow-y: auto;
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+    box-shadow: 0 10px 30px rgba(16,24,40,0.2);
+    display: none;
+  }
+  #pdcDevPanel.open{ display: block; }
+  #pdcDevPanel h3{ font-size: 12px; letter-spacing: 0.5px; color: var(--accent); margin: 0 0 4px; text-transform: uppercase; }
+  #pdcDevPanel .dev-sub{ font-size: 10px; color: var(--text-faint); margin-bottom: 10px; }
+  #pdcDevPanel .dev-row{ margin-bottom: 10px; }
+  #pdcDevPanel label{ display:block; font-size: 10px; color: var(--text-soft); margin-bottom: 4px; }
+  #pdcDevPanel button, #pdcDevPanel select, #pdcDevPanel input{
+    width: 100%; font-size: 11px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 6px 8px; background: #fff;
+  }
+  #pdcDevPanel button{ background: var(--text); color: #fff; border: none; cursor: pointer; }
+  #pdcDevPanel button:hover{ background: #000; }
+  #pdcDevPanel button.danger{ background: var(--danger); }
+  #pdcDevPanel button.danger:hover{ background: #B91C1C; }
+  #pdcDevPanel textarea{ width: 100%; height: 120px; font-size: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; font-family: monospace; }
+  #pdcDevPanel .inline-row{ display:flex; gap:6px; }
+  #pdcDevPanel .inline-row input{ flex: 1; }
+  #pdcDevPanel .inline-row button{ flex: 1; }
+  #pdcDevStatus{ font-size: 10px; color: var(--text-soft); margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 8px; }
+
+  /* ============================================================
+     INFINITE BALANCE MODULE — styles (only used by
+     infinite-balance-module script)
+     ============================================================ */
+  #pdcInfiniteToggle{
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-faint);
+    border: 1px dashed var(--border); border-radius: 999px;
+    padding: 6px 11px; cursor: pointer; user-select: none;
+  }
+  #pdcInfiniteToggle .dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); }
+  #pdcInfiniteToggle.active{ border-color: var(--success); color: var(--success); }
+  #pdcInfiniteToggle.active .dot{ background: var(--success); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ---------- Sidebar ---------- -->
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span>Pixel Tab</div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="canvas" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+        Canvas
+      </button>
+      <button class="nav-btn" data-view="activity" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        Activity
+      </button>
+      <button class="nav-btn" data-view="leaderboard" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 21V10M12 21V3M19 21v-7"/></svg>
+        Leaderboard
+      </button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-foot">Demo currency — balances are play money, no real payments happen on this page.</div>
+  </aside>
+
+  <!-- ---------- Main column ---------- -->
+  <div class="main-col">
+    <div class="topbar">
+      <div class="topbar-left"><span class="live-dot"></span><span id="syncStatus">Synced just now</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="helpBtn" type="button" aria-label="How it works">?</button>
+        <button class="btn-outline" id="highlightToggle" type="button">Highlight available squares</button>
+        <div class="wallet-chip">Balance <strong id="walletAmount">$0.00</strong></div>
+        <span id="infiniteBalanceMount"></span>
+        <button class="btn-text" id="addFundsBtn" type="button">+ $10</button>
+        <button class="btn-primary" id="cartTopBtn" type="button">Cart <span class="badge" id="cartTopBadge">0</span></button>
+      </div>
+    </div>
+
+    <div class="ticker-wrap"><div class="ticker-track" id="tickerTrack"></div></div>
+
+    <div class="content" id="content">
+
+      <section class="view active" id="viewCanvas">
+        <div class="canvas-stats">
+          <div class="stat"><span class="label">Sold</span><span class="value" id="statSold">0</span></div>
+          <div class="stat"><span class="label">Capacity</span><span class="value accent" id="statCapacity">1</span></div>
+          <div class="stat"><span class="label">Price each</span><span class="value" id="statPrice">$1.00</span></div>
+          <div class="stat"><span class="label">Grid</span><span class="value" id="statGrid">1×1</span></div>
+        </div>
+        <div class="canvas-card">
+          <div class="canvas-scroll" id="canvasScroll">
+            <canvas id="pixelCanvas" tabindex="0" aria-label="Pixel canvas. Click a square to select it, drag to select many."></canvas>
+          </div>
+          <div class="zoom-ctl">
+            <button type="button" id="zoomInBtn" aria-label="Zoom in">+</button>
+            <div class="zoom-slider-wrap">
+              <input type="range" id="zoomSlider" min="0.4" max="3" step="0.1" value="1" aria-label="Zoom level">
+            </div>
+            <button type="button" id="zoomOutBtn" aria-label="Zoom out">−</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="viewActivity">
+        <div class="view-head"><h1>Activity</h1><span class="sub">Most recent claims first</span></div>
+        <div class="panel-card" id="activityList"></div>
+      </section>
+
+      <section class="view" id="viewLeaderboard">
+        <div class="view-head"><h1>Leaderboard</h1><span class="sub">Ranked by squares owned</span></div>
+        <div class="panel-card" id="leaderboardList"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="pdcTooltip"></div>
+
+<!-- Cart bar -->
+<div class="cart-bar" id="cartBar">
+  <span><strong id="cartCount">0</strong> selected · <span class="cart-total" id="cartTotal">$0.00</span></span>
+  <button type="button" class="clear-btn" id="cartClearBtn">Clear</button>
+  <button type="button" class="checkout-btn" id="cartCheckoutBtn">Checkout →</button>
+</div>
+
+<!-- Checkout modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Buy 1 square</h2>
+    <p class="sub" id="modalSub">$1.00 · pick a color and add a caption if you'd like</p>
+
+    <div class="field">
+      <label>Color (applies to all selected squares)</label>
+      <div class="swatches" id="swatchRow"></div>
+      <div class="color-row">
+        <input type="color" id="colorPicker" value="#2563EB" aria-label="Pick a color">
+        <input type="text" id="hexInput" value="#2563EB" maxlength="7" placeholder="#RRGGBB" aria-label="Hex code">
+      </div>
+      <div class="error-text" id="colorError"></div>
+    </div>
+
+    <div class="field">
+      <label>Your name (optional)</label>
+      <input type="text" id="ownerInput" maxlength="24" placeholder="Anonymous">
+    </div>
+
+    <div class="field">
+      <label>Caption (optional)</label>
+      <input type="text" id="messageInput" maxlength="60" placeholder="Say something with your square(s)">
+    </div>
+
+    <div class="error-text" id="purchaseError"></div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" id="cancelBuyBtn" type="button">Cancel</button>
+      <button class="btn-confirm" id="confirmBuyBtn" type="button">Buy — $1.00</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal">
+    <h2>How it works</h2>
+    <p class="sub">&nbsp;</p>
+    <p style="font-size:13px; line-height:1.6; color:var(--text-soft); margin:0 0 14px;">
+      Every square starts blank. Click one to select it, or click-and-drag to select a whole block at once.
+      Selected squares go into your cart at the bottom of the screen — check out once to buy them all together
+      for $1 each, with one color and caption applied to the batch. The moment every square on the board is sold,
+      the whole canvas grows ×10 and stays exactly as it was.
+    </p>
+    <p style="font-size:12px; color:var(--text-faint); margin:0;">
+      This is a working demo — balances are play money tracked in this browser. No real charges happen anywhere on this page.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-confirm" id="closeHelpBtn" type="button" style="flex:1;">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast stack -->
+<div id="toastStack"></div>
+
+<div id="devModeMount"></div>
+
+<!-- ============================================================
+     CORE APPLICATION SCRIPT
+     ============================================================ -->
+<script id="core-app">
+(function(){
+  "use strict";
+
+  /* ---------- Config ---------- */
+  var CONFIG = {
+    PRICE: 1.00,
+    START_BALANCE: 20.00,
+    MIN_CELL: 4,
+    MAX_CELL: 30,
+    TARGET_FIT_PX: 640,
+    ZOOM_MIN: 0.4,
+    ZOOM_MAX: 3,
+    MAX_CAPACITY: 1000000, // soft ceiling so a browser tab can't be asked to track an unbounded array
+    STORAGE_KEY_CANVAS: 'pixel-tab-canvas-v2',
+    STORAGE_KEY_BALANCE: 'pixel-tab-balance-v2'
+  };
+
+  var COLORS = {
+    cellEmpty: '#F2F4F7',
+    cellGrid:  '#E7E9ED',
+    hoverRing: '#101828',
+    selectFill:'#DCE9FF',
+    selectStroke: '#2563EB',
+    highlightStroke: '#93B8FA'
+  };
+
+  var PRESET_COLORS = [
+    '#101828', '#FFFFFF', '#2563EB', '#16A34A',
+    '#DC2626', '#D9A536', '#7A2E8C', '#13988A',
+    '#F2542D', '#5B5F97', '#FF3CAC', '#E3E3DA'
+  ];
+
+  /* ---------- Storage bridge (graceful fallback to in-memory) ---------- */
+  var StorageBridge = {
+    _mem: {},
+    async get(key, shared){
+      try{
+        if (window.storage && typeof window.storage.get === 'function'){
+          var res = await window.storage.get(key, !!shared);
+          return res ? res.value : null;
+        }
+      }catch(e){ /* key missing or storage unavailable — fall through */ }
+      return Object.prototype.hasOwnProperty.call(this._mem, key) ? this._mem[key] : null;
+    },
+    async set(key, value, shared){
+      this._mem[key] = value;
+      try{
+        if (window.storage && typeof window.storage.set === 'function'){
+          await window.storage.set(key, value, !!shared);
+          return true;
+        }
+      }catch(e){
+        console.warn('PixelTab: storage write failed, continuing session-only for key', key, e);
+      }
+      return false;
+    }
+  };
+
+  /* ---------- Pure canvas/economy logic ---------- */
+  function gridDims(capacity){
+    var cols = Math.max(1, Math.ceil(Math.sqrt(capacity)));
+    var rows = Math.ceil(capacity / cols);
+    return { cols: cols, rows: rows };
+  }
+  function isFull(state){
+    for (var i = 0; i < state.pixels.length; i++){
+      if (state.pixels[i] === null) return false;
+    }
+    return true;
+  }
+  function expandState(state){
+    if (state.capacity >= CONFIG.MAX_CAPACITY) return false;
+    var newCapacity = state.capacity * 10;
+    while (state.pixels.length < newCapacity) state.pixels.push(null);
+    state.capacity = newCapacity;
+    return true;
+  }
+  function normalizeHex(raw){
+    if (!raw) return null;
+    var v = raw.trim();
+    if (v[0] !== '#') v = '#' + v;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(v)) return null;
+    return v.toUpperCase();
+  }
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+  /* ---------- App state ---------- */
+  var state = null;          // { capacity, pixels: [...] }
+  var balance = 0;
+  var zoom = 1;
+  var highlightAvailable = false;
+  var hoveredIndex = -1;
+  var selectedSet = new Set();
+  var dragging = false, dragStart = -1, dragMoved = false, dragPreviewSet = new Set();
+  var COLS = 1, ROWS = 1, CELL = 16;
+  var ctx = null, canvas = null;
+  var activeView = 'canvas';
+
+  async function loadState(){
+    var raw = await StorageBridge.get(CONFIG.STORAGE_KEY_CANVAS, true);
+    if (raw){
+      try{
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.pixels) && parsed.capacity){
+          return parsed;
+        }
+      }catch(e){ console.warn('PixelTab: corrupt canvas state, starting fresh', e); }
+    }
+    var fresh = { capacity: 1, pixels: [null] };
+    await saveState(fresh);
+    return fresh;
+  }
+  async function saveState(s){
+    await StorageBridge.set(CONFIG.STORAGE_KEY_CANVAS, JSON.stringify(s), true);
+  }
+
+  async function loadBalance(){
+    var raw = await StorageBridge.get(CONFIG.STORAGE_KEY_BALANCE, false);
+    if (raw !== null && raw !== undefined){
+      var n = parseFloat(raw);
+      if (!isNaN(n)) return n;
+    }
+    await saveBalance(CONFIG.START_BALANCE);
+    return CONFIG.START_BALANCE;
+  }
+  async function saveBalance(n){
+    balance = n;
+    await StorageBridge.set(CONFIG.STORAGE_KEY_BALANCE, String(n), false);
+    refreshWalletUI();
+  }
+
+  /* ---------- Sizing: always fit the squarest possible layout ---------- */
+  function computeFitPx(){
+    var sidebarAndChrome = 224 + 96;
+    var availW = window.innerWidth - sidebarAndChrome;
+    var availH = window.innerHeight - 250;
+    return clamp(Math.min(availW, availH, CONFIG.TARGET_FIT_PX), 220, CONFIG.TARGET_FIT_PX);
+  }
+
+  function setupCanvasSize(){
+    var dims = gridDims(state.capacity);
+    COLS = dims.cols;
+    ROWS = dims.rows;
+    var baseCell = clamp(computeFitPx() / COLS, CONFIG.MIN_CELL, CONFIG.MAX_CELL);
+    CELL = baseCell * zoom;
+
+    var displayW = COLS * CELL;
+    var displayH = ROWS * CELL;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(displayW * dpr));
+    canvas.height = Math.max(1, Math.floor(displayH * dpr));
+    canvas.style.width = displayW + 'px';
+    canvas.style.height = displayH + 'px';
+    ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function cellRect(index){
+    var col = index % COLS;
+    var row = Math.floor(index / COLS);
+    return { x: col * CELL, y: row * CELL };
+  }
+
+  function drawCell(index){
+    if (index < 0 || index >= state.pixels.length) return;
+    var pos = cellRect(index);
+    var px = state.pixels[index];
+
+    ctx.fillStyle = COLORS.cellGrid;
+    ctx.fillRect(pos.x, pos.y, CELL, CELL);
+
+    var inset = CELL > 8 ? 1 : 0.5;
+    if (px){
+      ctx.fillStyle = px.color;
+      ctx.fillRect(pos.x + inset, pos.y + inset, CELL - inset * 2, CELL - inset * 2);
+    } else if (selectedSet.has(index) || dragPreviewSet.has(index)){
+      ctx.fillStyle = COLORS.selectFill;
+      ctx.fillRect(pos.x + inset, pos.y + inset, CELL - inset * 2, CELL - inset * 2);
+      ctx.strokeStyle = COLORS.selectStroke;
+      ctx.lineWidth = Math.min(2, CELL * 0.18);
+      ctx.strokeRect(pos.x + 1.5, pos.y + 1.5, CELL - 3, CELL - 3);
+    } else {
+      ctx.fillStyle = COLORS.cellEmpty;
+      ctx.fillRect(pos.x + inset, pos.y + inset, CELL - inset * 2, CELL - inset * 2);
+      if (highlightAvailable){
+        ctx.strokeStyle = COLORS.highlightStroke;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(pos.x + 1.5, pos.y + 1.5, CELL - 3, CELL - 3);
+      }
+    }
+
+    if (index === hoveredIndex && CELL > 5){
+      ctx.strokeStyle = COLORS.hoverRing;
+      ctx.lineWidth = Math.min(2, CELL * 0.18);
+      ctx.strokeRect(pos.x + 1.5, pos.y + 1.5, CELL - 3, CELL - 3);
+    }
+  }
+
+  function renderAll(){
+    setupCanvasSize();
+    for (var i = 0; i < state.pixels.length; i++) drawCell(i);
+    refreshStatsUI();
+    updateTicker();
+  }
+
+  function refreshStatsUI(){
+    var sold = 0;
+    for (var i = 0; i < state.pixels.length; i++) if (state.pixels[i]) sold++;
+    document.getElementById('statSold').textContent = sold;
+    document.getElementById('statCapacity').textContent = state.capacity;
+    document.getElementById('statPrice').textContent = '$' + CONFIG.PRICE.toFixed(2);
+    document.getElementById('statGrid').textContent = COLS + '×' + ROWS;
+  }
+
+  function refreshWalletUI(){
+    var isInfinite = window.InfiniteBalance && window.InfiniteBalance.isEnabled();
+    document.getElementById('walletAmount').textContent = isInfinite ? '∞' : ('$' + balance.toFixed(2));
+  }
+
+  /* ---------- Ticker ---------- */
+  function timeAgo(ts){
+    var s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return 'just now';
+    var m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
+    var h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+  }
+  function recentPurchases(limit){
+    var items = [];
+    for (var i = 0; i < state.pixels.length; i++){
+      if (state.pixels[i]) items.push({ index: i, px: state.pixels[i] });
+    }
+    items.sort(function(a, b){ return (b.px.ts || 0) - (a.px.ts || 0); });
+    return items.slice(0, limit || items.length);
+  }
+  function updateTicker(){
+    var track = document.getElementById('tickerTrack');
+    var recent = recentPurchases(30);
+    var html;
+    if (recent.length === 0){
+      html = '<span class="seg">Be the first to claim a square — $1 each.</span>';
+    } else {
+      html = recent.map(function(item){
+        var pos = cellRect(item.index);
+        var col = pos.x / CELL, row = pos.y / CELL; // not used for display math, recompute cleanly below
+        col = item.index % COLS; row = Math.floor(item.index / COLS);
+        return '<span class="seg"><strong>' + escapeHtml(item.px.owner || 'Anonymous') + '</strong> claimed (' + col + ', ' + row + ')</span>';
+      }).join('');
+    }
+    track.innerHTML = html + html; // duplicate for seamless loop
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  /* ---------- Pointer math ---------- */
+  function indexFromEvent(evt){
+    var rect = canvas.getBoundingClientRect();
+    var x = evt.clientX - rect.left;
+    var y = evt.clientY - rect.top;
+    var col = Math.floor(x / CELL);
+    var row = Math.floor(y / CELL);
+    if (col < 0 || row < 0 || col >= COLS) return -1;
+    var index = row * COLS + col;
+    if (index >= state.pixels.length) return -1;
+    return index;
+  }
+
+  function computeRectSet(a, b){
+    var colA = a % COLS, rowA = Math.floor(a / COLS);
+    var colB = b % COLS, rowB = Math.floor(b / COLS);
+    var minC = Math.min(colA, colB), maxC = Math.max(colA, colB);
+    var minR = Math.min(rowA, rowB), maxR = Math.max(rowA, rowB);
+    var set = new Set();
+    for (var r = minR; r <= maxR; r++){
+      for (var c = minC; c <= maxC; c++){
+        var idx = r * COLS + c;
+        if (idx < state.pixels.length && !state.pixels[idx]) set.add(idx);
+      }
+    }
+    return set;
+  }
+
+  function diffRedraw(oldSet, newSet){
+    oldSet.forEach(function(idx){ if (!newSet.has(idx)) drawCell(idx); });
+    newSet.forEach(function(idx){ if (!oldSet.has(idx)) drawCell(idx); });
+  }
+
+  function onCanvasDown(evt){
+    var idx = indexFromEvent(evt);
+    if (idx === -1 || state.pixels[idx]) return;
+    dragging = true; dragStart = idx; dragMoved = false;
+    dragPreviewSet = new Set([idx]);
+    drawCell(idx);
+    evt.preventDefault();
+  }
+
+  function onCanvasMove(evt){
+    if (dragging){
+      var idx = indexFromEvent(evt);
+      var target = idx === -1 ? dragStart : idx;
+      if (target !== dragStart) dragMoved = true;
+      var newPreview = computeRectSet(dragStart, target);
+      diffRedraw(dragPreviewSet, newPreview);
+      dragPreviewSet = newPreview;
+      document.getElementById('pdcTooltip').style.display = 'none';
+      return;
+    }
+    var hIdx = indexFromEvent(evt);
+    if (hIdx !== hoveredIndex){
+      var prev = hoveredIndex;
+      hoveredIndex = hIdx;
+      if (prev !== -1) drawCell(prev);
+      if (hIdx !== -1) drawCell(hIdx);
+    }
+    positionTooltip(evt, hIdx);
+  }
+
+  function onWindowUp(evt){
+    if (!dragging) return;
+    dragging = false;
+    if (dragMoved){
+      dragPreviewSet.forEach(function(idx){ selectedSet.add(idx); });
+    } else {
+      if (selectedSet.has(dragStart)) selectedSet.delete(dragStart);
+      else selectedSet.add(dragStart);
+    }
+    var affected = new Set(dragPreviewSet);
+    affected.add(dragStart);
+    dragPreviewSet = new Set();
+    affected.forEach(function(idx){ drawCell(idx); });
+    updateCartUI();
+  }
+
+  function onCanvasLeave(){
+    if (!dragging){
+      var prev = hoveredIndex;
+      hoveredIndex = -1;
+      if (prev !== -1) drawCell(prev);
+      document.getElementById('pdcTooltip').style.display = 'none';
+    }
+  }
+
+  function positionTooltip(evt, idx){
+    var tip = document.getElementById('pdcTooltip');
+    if (idx === -1){ tip.style.display = 'none'; return; }
+    var px = state.pixels[idx];
+    var col = idx % COLS, row = Math.floor(idx / COLS);
+    if (px){
+      tip.innerHTML = '<span class="swatch" style="background:' + px.color + '"></span>(' + col + ', ' + row + ') — sold by ' + escapeHtml(px.owner || 'Anonymous') +
+        (px.message ? ('<br>"' + escapeHtml(px.message) + '"') : '');
+    } else if (selectedSet.has(idx)){
+      tip.innerHTML = '(' + col + ', ' + row + ') — selected · click to remove';
+    } else {
+      tip.innerHTML = '(' + col + ', ' + row + ') — free · click or drag to select';
+    }
+    tip.style.display = 'block';
+    var left = evt.clientX + 14;
+    var top = evt.clientY + 14;
+    if (left + 230 > window.innerWidth) left = evt.clientX - 230;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+
+  /* ---------- Cart ---------- */
+  function updateCartUI(){
+    var count = selectedSet.size;
+    var total = count * CONFIG.PRICE;
+    document.getElementById('cartCount').textContent = count;
+    document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+    document.getElementById('cartTopBadge').textContent = count;
+    document.getElementById('cartBar').classList.toggle('show', count > 0);
+  }
+  function clearCart(){
+    var old = selectedSet;
+    selectedSet = new Set();
+    old.forEach(function(idx){ drawCell(idx); });
+    updateCartUI();
+  }
+
+  /* ---------- Checkout modal ---------- */
+  var modalOverlay, hexInput, colorPicker, ownerInput, messageInput, colorError, purchaseError, confirmBuyBtn;
+
+  function openCheckout(){
+    if (selectedSet.size === 0) return;
+    var count = selectedSet.size;
+    var total = count * CONFIG.PRICE;
+    document.getElementById('modalTitle').textContent = 'Buy ' + count + ' square' + (count === 1 ? '' : 's');
+    document.getElementById('modalSub').textContent = '$' + total.toFixed(2) + ' · pick a color and add a caption if you\'d like';
+    confirmBuyBtn.textContent = 'Buy — $' + total.toFixed(2);
+    colorError.textContent = '';
+    purchaseError.textContent = '';
+    hexInput.value = '#2563EB';
+    colorPicker.value = '#2563EB';
+    hexInput.classList.remove('invalid');
+    highlightSelectedSwatch('#2563EB');
+    messageInput.value = '';
+    modalOverlay.classList.add('open');
+    setTimeout(function(){ hexInput.focus(); }, 0);
+  }
+  function closeCheckout(){ modalOverlay.classList.remove('open'); }
+  function highlightSelectedSwatch(hex){
+    document.querySelectorAll('.swatch-btn').forEach(function(btn){
+      btn.classList.toggle('selected', btn.dataset.hex === hex);
+    });
+  }
+  function buildSwatches(){
+    var row = document.getElementById('swatchRow');
+    PRESET_COLORS.forEach(function(hex){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'swatch-btn';
+      btn.style.background = hex;
+      btn.dataset.hex = hex;
+      btn.setAttribute('aria-label', 'Use color ' + hex);
+      btn.addEventListener('click', function(){
+        hexInput.value = hex; colorPicker.value = hex;
+        hexInput.classList.remove('invalid'); colorError.textContent = '';
+        highlightSelectedSwatch(hex);
+      });
+      row.appendChild(btn);
+    });
+  }
+
+  async function confirmCheckout(){
+    var hex = normalizeHex(hexInput.value);
+    if (!hex){
+      colorError.textContent = 'That hex code doesn\'t look right — try something like #2563EB.';
+      hexInput.classList.add('invalid');
+      return;
+    }
+    var indices = Array.from(selectedSet).filter(function(i){ return !state.pixels[i]; });
+    if (indices.length === 0){
+      purchaseError.textContent = 'Those squares just sold. Pick some new ones.';
+      closeCheckout();
+      clearCart();
+      return;
+    }
+
+    var infinite = window.InfiniteBalance && window.InfiniteBalance.isEnabled();
+    var total = indices.length * CONFIG.PRICE;
+    if (!infinite && balance < total){
+      purchaseError.textContent = 'Your balance is short $' + (total - balance).toFixed(2) + '. Add funds to keep buying.';
+      return;
+    }
+
+    confirmBuyBtn.disabled = true;
+    var message = messageInput.value.trim().slice(0, 60);
+    var owner = (ownerInput.value.trim() || 'Anonymous').slice(0, 24);
+    var ts = Date.now();
+    indices.forEach(function(idx){
+      state.pixels[idx] = { color: hex, message: message, owner: owner, ts: ts };
+    });
+
+    if (!infinite) await saveBalance(balance - total);
+
+    selectedSet.clear();
+    indices.forEach(function(idx){ drawCell(idx); });
+    refreshStatsUI();
+    updateTicker();
+    updateCartUI();
+
+    var expanded = false;
+    if (isFull(state)) expanded = expandState(state);
+
+    await saveState(state);
+    closeCheckout();
+    confirmBuyBtn.disabled = false;
+
+    if (expanded){
+      if (state.capacity >= CONFIG.MAX_CAPACITY && isFull(state)){
+        pushToast('Canvas complete', 'All 1,000,000 squares are sold.');
+      } else {
+        pushToast('Sold out — canvas grew ×10', 'Capacity is now ' + state.capacity.toLocaleString() + '.');
+      }
+      renderAll();
+    }
+  }
+
+  function pushToast(title, sub){
+    var stack = document.getElementById('toastStack');
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(sub) + '</span>';
+    stack.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 2900);
+  }
+
+  function wireHexColorSync(){
+    hexInput.addEventListener('input', function(){
+      var hex = normalizeHex(hexInput.value);
+      if (hex){
+        colorPicker.value = hex;
+        hexInput.classList.remove('invalid');
+        colorError.textContent = '';
+        highlightSelectedSwatch(hex);
+      } else {
+        hexInput.classList.add('invalid');
+      }
+    });
+    colorPicker.addEventListener('input', function(){
+      var hex = colorPicker.value.toUpperCase();
+      hexInput.value = hex;
+      hexInput.classList.remove('invalid');
+      colorError.textContent = '';
+      highlightSelectedSwatch(hex);
+    });
+  }
+
+  async function addDemoFunds(){ await saveBalance(balance + 10); }
+
+  /* ---------- Views: Activity & Leaderboard ---------- */
+  function renderActivityView(){
+    var list = document.getElementById('activityList');
+    var items = recentPurchases(200);
+    if (items.length === 0){
+      list.innerHTML = '<div class="empty-state">No squares claimed yet — be the first.</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(item){
+      var col = item.index % COLS, row = Math.floor(item.index / COLS);
+      var px = item.px;
+      return '<div class="row">' +
+        '<span class="swatch" style="background:' + px.color + '"></span>' +
+        '<span class="main"><strong>' + escapeHtml(px.owner || 'Anonymous') + '</strong> claimed (' + col + ', ' + row + ')' +
+        (px.message ? ' <span class="cap">“' + escapeHtml(px.message) + '”</span>' : '') + '</span>' +
+        '<span class="meta">' + timeAgo(px.ts || 0) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderLeaderboardView(){
+    var list = document.getElementById('leaderboardList');
+    var counts = {};
+    for (var i = 0; i < state.pixels.length; i++){
+      var px = state.pixels[i];
+      if (!px) continue;
+      var owner = px.owner || 'Anonymous';
+      counts[owner] = (counts[owner] || 0) + 1;
+    }
+    var ranked = Object.keys(counts).map(function(name){ return { name: name, count: counts[name] }; });
+    ranked.sort(function(a, b){ return b.count - a.count; });
+    if (ranked.length === 0){
+      list.innerHTML = '<div class="empty-state">No claims yet — the leaderboard fills in as squares sell.</div>';
+      return;
+    }
+    list.innerHTML = ranked.map(function(r, i){
+      return '<div class="row' + (i < 3 ? ' top' : '') + '">' +
+        '<span class="rank-chip">' + (i + 1) + '</span>' +
+        '<span class="main"><strong>' + escapeHtml(r.name) + '</strong></span>' +
+        '<span class="meta">' + r.count + ' square' + (r.count === 1 ? '' : 's') + ' · $' + (r.count * CONFIG.PRICE).toFixed(2) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function setActiveView(view){
+    activeView = view;
+    document.querySelectorAll('.nav-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    document.getElementById('viewCanvas').classList.toggle('active', view === 'canvas');
+    document.getElementById('viewActivity').classList.toggle('active', view === 'activity');
+    document.getElementById('viewLeaderboard').classList.toggle('active', view === 'leaderboard');
+    if (view === 'activity') renderActivityView();
+    if (view === 'leaderboard') renderLeaderboardView();
+    if (view === 'canvas') renderAll();
+  }
+
+  /* ---------- Zoom ---------- */
+  function setZoom(z){
+    zoom = clamp(z, CONFIG.ZOOM_MIN, CONFIG.ZOOM_MAX);
+    document.getElementById('zoomSlider').value = zoom;
+    renderAll();
+  }
+
+  /* ---------- Public hook for the dev-mode and infinite-balance modules ---------- */
+  window.PDC = {
+    config: CONFIG,
+    getState: function(){ return state; },
+    getBalance: function(){ return balance; },
+    isFull: isFull,
+    async forceExpand(){
+      if (state.capacity >= CONFIG.MAX_CAPACITY) return false;
+      var ok = expandState(state);
+      if (ok) { await saveState(state); renderAll(); }
+      return ok;
+    },
+    async jumpToCapacity(n){
+      if (n < state.pixels.length) state.pixels = state.pixels.slice(0, n);
+      else while (state.pixels.length < n) state.pixels.push(null);
+      state.capacity = n;
+      selectedSet.clear();
+      await saveState(state);
+      renderAll();
+      updateCartUI();
+    },
+    async fillRandom(count){
+      var sample = ['#2563EB','#16A34A','#DC2626','#D9A536','#7A2E8C','#13988A','#F2542D'];
+      var filled = 0;
+      for (var i = 0; i < state.pixels.length && filled < count; i++){
+        if (!state.pixels[i]){
+          state.pixels[i] = { color: sample[Math.floor(Math.random() * sample.length)], message: 'dev fill', owner: 'dev-tools', ts: Date.now() };
+          filled++;
+        }
+      }
+      var expanded = false;
+      if (isFull(state)) expanded = expandState(state);
+      await saveState(state);
+      renderAll();
+      return { filled: filled, expanded: expanded };
+    },
+    async resetCanvas(){
+      state = { capacity: 1, pixels: [null] };
+      selectedSet.clear();
+      await saveState(state);
+      renderAll();
+      updateCartUI();
+    },
+    async resetBalance(){ await saveBalance(CONFIG.START_BALANCE); },
+    async setBalance(n){ await saveBalance(n); },
+    renderAll: renderAll,
+    refreshWalletUI: refreshWalletUI,
+    storageBacked: function(){ return !!(window.storage && typeof window.storage.get === 'function'); }
+  };
+
+  /* ---------- Init ---------- */
+  async function init(){
+    canvas = document.getElementById('pixelCanvas');
+    modalOverlay = document.getElementById('modalOverlay');
+    hexInput = document.getElementById('hexInput');
+    colorPicker = document.getElementById('colorPicker');
+    ownerInput = document.getElementById('ownerInput');
+    messageInput = document.getElementById('messageInput');
+    colorError = document.getElementById('colorError');
+    purchaseError = document.getElementById('purchaseError');
+    confirmBuyBtn = document.getElementById('confirmBuyBtn');
+
+    state = await loadState();
+    balance = await loadBalance();
+
+    buildSwatches();
+    wireHexColorSync();
+    renderAll();
+    refreshWalletUI();
+    updateCartUI();
+
+    canvas.addEventListener('mousedown', onCanvasDown);
+    canvas.addEventListener('mousemove', onCanvasMove);
+    canvas.addEventListener('mouseleave', onCanvasLeave);
+    window.addEventListener('mouseup', onWindowUp);
+
+    document.getElementById('cancelBuyBtn').addEventListener('click', closeCheckout);
+    document.getElementById('confirmBuyBtn').addEventListener('click', confirmCheckout);
+    modalOverlay.addEventListener('click', function(e){ if (e.target === modalOverlay) closeCheckout(); });
+
+    document.getElementById('cartClearBtn').addEventListener('click', clearCart);
+    document.getElementById('cartCheckoutBtn').addEventListener('click', openCheckout);
+    document.getElementById('cartTopBtn').addEventListener('click', openCheckout);
+
+    document.getElementById('addFundsBtn').addEventListener('click', addDemoFunds);
+
+    document.getElementById('highlightToggle').addEventListener('click', function(){
+      highlightAvailable = !highlightAvailable;
+      this.classList.toggle('active', highlightAvailable);
+      renderAll();
+    });
+
+    var helpOverlay = document.getElementById('helpOverlay');
+    document.getElementById('helpBtn').addEventListener('click', function(){ helpOverlay.classList.add('open'); });
+    document.getElementById('closeHelpBtn').addEventListener('click', function(){ helpOverlay.classList.remove('open'); });
+    helpOverlay.addEventListener('click', function(e){ if (e.target === helpOverlay) helpOverlay.classList.remove('open'); });
+
+    document.addEventListener('keydown', function(e){
+      if (e.key !== 'Escape') return;
+      if (modalOverlay.classList.contains('open')) closeCheckout();
+      if (helpOverlay.classList.contains('open')) helpOverlay.classList.remove('open');
+    });
+
+    document.querySelectorAll('.nav-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ setActiveView(btn.dataset.view); });
+    });
+
+    document.getElementById('zoomSlider').addEventListener('input', function(){ setZoom(parseFloat(this.value)); });
+    document.getElementById('zoomInBtn').addEventListener('click', function(){ setZoom(zoom + 0.2); });
+    document.getElementById('zoomOutBtn').addEventListener('click', function(){ setZoom(zoom - 0.2); });
+
+    var resizeTimer = null;
+    window.addEventListener('resize', function(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function(){ if (activeView === 'canvas') renderAll(); }, 150);
+    });
+
+    if (!window.PDC.storageBacked()){
+      document.getElementById('syncStatus').textContent = 'Session-only (no persistent storage detected)';
+    }
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+<!-- ============================================================
+     DEV MODE MODULE — entirely self-contained.
+     Builds its own toggle button + panel and talks to the core
+     app only through window.PDC. Delete this whole <script> tag
+     (and its matching CSS block above) to ship without it.
+     ============================================================ -->
+<script id="dev-mode-module">
+(function(){
+  "use strict";
+
+  function waitForPDC(cb){
+    if (window.PDC && window.PDC.getState && window.PDC.getState()) cb();
+    else setTimeout(function(){ waitForPDC(cb); }, 50);
+  }
+
+  function buildPanel(){
+    var mount = document.getElementById('devModeMount');
+    if (!mount) return;
+
+    var toggleBtn = document.createElement('button');
+    toggleBtn.id = 'pdcDevToggle';
+    toggleBtn.type = 'button';
+    toggleBtn.title = 'Dev tools';
+    toggleBtn.textContent = '⚙';
+    document.body.appendChild(toggleBtn);
+
+    var panel = document.createElement('div');
+    panel.id = 'pdcDevPanel';
+    panel.innerHTML =
+      '<h3>DEV TOOLS</h3>' +
+      '<div class="dev-sub">Testing only — not shown to real visitors of a production build.</div>' +
+      '<div class="dev-row"><label>Force expand canvas ×10</label><button type="button" id="devForceExpand">Force expand now</button></div>' +
+      '<div class="dev-row"><label>Auto-fill empty squares (random colors)</label>' +
+        '<div class="inline-row"><input type="number" id="devFillCount" value="20" min="1"><button type="button" id="devFillBtn">Auto-fill</button></div></div>' +
+      '<div class="dev-row"><label>Jump straight to a capacity tier</label>' +
+        '<select id="devCapacitySelect">' +
+          '<option value="1">1</option><option value="10">10</option><option value="100">100</option>' +
+          '<option value="1000">1,000</option><option value="10000">10,000</option>' +
+          '<option value="100000">100,000</option><option value="1000000">1,000,000</option>' +
+        '</select><button type="button" id="devJumpBtn" style="margin-top:6px;">Jump</button></div>' +
+      '<div class="dev-row"><button type="button" id="devResetCanvas" class="danger">Reset canvas (wipe all squares)</button></div>' +
+      '<div class="dev-row"><button type="button" id="devResetBalance">Reset balance to $' + window.PDC.config.START_BALANCE.toFixed(2) + '</button></div>' +
+      '<div class="dev-row"><label>Raw state (read-only)</label><textarea id="devStateView" readonly></textarea>' +
+        '<button type="button" id="devRefreshState" style="margin-top:6px;">Refresh view</button></div>' +
+      '<div id="pdcDevStatus"></div>';
+    document.body.appendChild(panel);
+
+    toggleBtn.addEventListener('click', function(){
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) refreshStateView();
+    });
+
+    document.getElementById('devForceExpand').addEventListener('click', async function(){
+      var ok = await window.PDC.forceExpand();
+      setStatus(ok ? 'Expanded to ' + window.PDC.getState().capacity + '.' : 'Already at the max capacity ceiling.');
+      refreshStateView();
+    });
+    document.getElementById('devFillBtn').addEventListener('click', async function(){
+      var n = parseInt(document.getElementById('devFillCount').value, 10) || 1;
+      var result = await window.PDC.fillRandom(n);
+      setStatus('Filled ' + result.filled + ' square(s).' + (result.expanded ? ' Canvas expanded!' : ''));
+      refreshStateView();
+    });
+    document.getElementById('devJumpBtn').addEventListener('click', async function(){
+      var n = parseInt(document.getElementById('devCapacitySelect').value, 10);
+      await window.PDC.jumpToCapacity(n);
+      setStatus('Jumped to capacity ' + n + '.');
+      refreshStateView();
+    });
+    document.getElementById('devResetCanvas').addEventListener('click', async function(){
+      if (!window.confirm('This wipes every square on the canvas. Continue?')) return;
+      await window.PDC.resetCanvas();
+      setStatus('Canvas reset to capacity 1.');
+      refreshStateView();
+    });
+    document.getElementById('devResetBalance').addEventListener('click', async function(){
+      await window.PDC.resetBalance();
+      setStatus('Balance reset.');
+    });
+    document.getElementById('devRefreshState').addEventListener('click', refreshStateView);
+
+    function refreshStateView(){ document.getElementById('devStateView').value = JSON.stringify(window.PDC.getState(), null, 2); }
+    function setStatus(msg){ document.getElementById('pdcDevStatus').textContent = msg; }
+
+    setStatus(window.PDC.storageBacked() ? 'Shared storage: connected.' : 'Shared storage: unavailable — session only.');
+  }
+
+  waitForPDC(buildPanel);
+})();
+</script>
+
+<!-- ============================================================
+     INFINITE BALANCE MODULE — entirely self-contained.
+     Injects its own toggle pill into the topbar mount point and
+     exposes window.InfiniteBalance. The core app only ever checks
+     `window.InfiniteBalance && window.InfiniteBalance.isEnabled()`,
+     so deleting this whole <script> tag (and its CSS block above)
+     leaves the rest of the app working normally with real balances.
+     ============================================================ -->
+<script id="infinite-balance-module">
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'pixel-tab-infinite-balance-v2';
+  var enabled = false;
+
+  function waitForPDC(cb){
+    if (window.PDC && window.PDC.getState && window.PDC.getState()) cb();
+    else setTimeout(function(){ waitForPDC(cb); }, 50);
+  }
+
+  async function loadPref(){
+    try{
+      if (window.storage && typeof window.storage.get === 'function'){
+        var res = await window.storage.get(STORAGE_KEY, false);
+        return res && res.value === 'true';
+      }
+    }catch(e){ /* no saved preference yet */ }
+    return false;
+  }
+  async function savePref(val){
+    try{
+      if (window.storage && typeof window.storage.set === 'function'){
+        await window.storage.set(STORAGE_KEY, String(val), false);
+      }
+    }catch(e){ /* session-only fallback */ }
+  }
+
+  function buildToggle(){
+    var mount = document.getElementById('infiniteBalanceMount');
+    if (!mount) return;
+
+    var pill = document.createElement('span');
+    pill.id = 'pdcInfiniteToggle';
+    pill.setAttribute('role', 'switch');
+    pill.setAttribute('tabindex', '0');
+    pill.innerHTML = '<span class="dot"></span><span class="lbl">∞ balance (test)</span>';
+    mount.appendChild(pill);
+
+    function applyVisual(){
+      pill.classList.toggle('active', enabled);
+      pill.setAttribute('aria-checked', String(enabled));
+      window.PDC.refreshWalletUI();
+    }
+    async function toggle(){
+      enabled = !enabled;
+      await savePref(enabled);
+      applyVisual();
+    }
+    pill.addEventListener('click', toggle);
+    pill.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+
+    window.InfiniteBalance = { isEnabled: function(){ return enabled; }, toggle: toggle };
+    applyVisual();
+  }
+
+  waitForPDC(async function(){
+    enabled = await loadPref();
+    buildToggle();
+  });
+})();
+</script>
+
+</body>
+</html>
