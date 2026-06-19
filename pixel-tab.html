@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Tab — $1 buys one square</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     ============================================================ */
+  :root{
+    --paper:        #EDEEE3;
+    --paper-deep:    #E3E5D6;
+    --paper-line:    #C7D1C9;
+    --ink:          #1B1B17;
+    --ink-soft:      rgba(27,27,23,0.62);
+    --ink-faint:     rgba(27,27,23,0.32);
+    --stamp-red:     #C8432D;
+    --stamp-red-dk:  #A53620;
+    --ledger-gold:   #B98B2E;
+    --cell-empty:    #FAFAF4;
+    --cell-grid:     #D7DBC8;
+    --ok-green:      #2F6B4F;
+    --font-mono:     'Space Mono', 'Courier New', monospace;
+    --font-body:     'Inter', system-ui, -apple-system, sans-serif;
+    --radius:        4px;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+
+  body{
+    background:
+      repeating-linear-gradient(0deg, var(--paper-line) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, var(--paper-line) 0 1px, transparent 1px 28px),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  :focus-visible{
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  button{ font-family: inherit; cursor: pointer; }
+
+  .pdc-app{
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* ---------- Header / "ledger" strip ---------- */
+  .pdc-header{
+    border-bottom: 2px dashed var(--ink-faint);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .pdc-title-block h1{
+    font-family: var(--font-mono);
+    font-size: 30px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+  }
+  .pdc-title-block h1 .dollar{ color: var(--stamp-red); }
+  .pdc-title-block p{
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    max-width: 440px;
+  }
+
+  .pdc-stats{
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .pdc-stat{ text-align: left; min-width: 64px; }
+  .pdc-stat .label{
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .pdc-stat .value{
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .pdc-stat .value.accent{ color: var(--stamp-red); }
+
+  /* ---------- Wallet ---------- */
+  .pdc-wallet{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .pdc-wallet-tag{
+    background: var(--paper);
+    border: 2px solid var(--ledger-gold);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    transform: rotate(1.5deg);
+    text-align: right;
+    box-shadow: 2px 3px 0 var(--ink-faint);
+  }
+  .pdc-wallet-tag .label{
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: block;
+  }
+  .pdc-wallet-tag .amount{
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ok-green);
+  }
+  .pdc-wallet-actions{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-mini{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background: transparent;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 5px 9px;
+    color: var(--ink);
+  }
+  .btn-mini:hover{ border-color: var(--ink); }
+
+  /* ---------- Canvas panel ---------- */
+  .pdc-panel{
+    background: var(--paper-deep);
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: 3px 4px 0 var(--ink-faint);
+  }
+  .pdc-canvas-scroll{
+    overflow: auto;
+    max-height: 64vh;
+    border: 1px solid var(--cell-grid);
+    background: var(--cell-grid);
+    line-height: 0;
+  }
+  #pixelCanvas{ display:block; cursor: pointer; }
+  #pixelCanvas:focus{ outline: none; }
+
+  .pdc-panel-foot{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Legend / footer ---------- */
+  .pdc-legend{
+    margin-top: 26px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--ink-faint);
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .pdc-legend strong{ color: var(--ink); }
+  .pdc-legend .demo-note{
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- Tooltip ---------- */
+  #pdcTooltip{
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    max-width: 220px;
+    line-height: 1.4;
+    display: none;
+    box-shadow: 2px 3px 0 rgba(0,0,0,0.25);
+  }
+  #pdcTooltip .swatch{
+    display:inline-block;
+    width:9px;height:9px;
+    border-radius:2px;
+    margin-right:6px;
+    vertical-align: -1px;
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  /* ---------- Modal ---------- */
+  .pdc-modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(27,27,23,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .pdc-modal-overlay.open{ display: flex; }
+  .pdc-modal{
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    box-shadow: 4px 6px 0 rgba(27,27,23,0.25);
+  }
+  .pdc-modal h2{
+    font-family: var(--font-mono);
+    font-size: 17px;
+    margin: 0 0 2px;
+  }
+  .pdc-modal .sub{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+  .pdc-field{ margin-bottom: 14px; }
+  .pdc-field label{
+    display:block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .pdc-field input[type="text"]{
+    width: 100%;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    background: #fff;
+  }
+  .pdc-field input[type="text"]:focus{ border-color: var(--ink); }
+  .pdc-field input.invalid{ border-color: var(--stamp-red); }
+  .pdc-error{
+    font-size: 11px;
+    color: var(--stamp-red-dk);
+    margin-top: 5px;
+    min-height: 14px;
+    font-family: var(--font-mono);
+  }
+
+  .pdc-swatches{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .pdc-swatch{
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    border: 1px solid var(--ink-faint);
+    padding: 0;
+  }
+  .pdc-swatch:hover{ transform: scale(1.12); }
+  .pdc-swatch.selected{ outline: 2px solid var(--ink); outline-offset: 1px; }
+
+  .pdc-color-row{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .pdc-color-row input[type="color"]{
+    width: 42px; height: 36px;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 2px;
+    background: #fff;
+  }
+  .pdc-color-row input[type="text"]{
+    flex: 1;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  .pdc-modal-actions{
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .btn-stamp{
+    flex: 1;
+    background: var(--stamp-red);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .btn-stamp:hover{ background: var(--stamp-red-dk); }
+  .btn-stamp:disabled{ background: var(--ink-faint); cursor: not-allowed; }
+  .btn-ghost{
+    background: transparent;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .btn-ghost:hover{ border-color: var(--ink); }
+
+  /* ---------- Tier-up celebration ---------- */
+  #pdcTierUp{
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  #pdcTierUp .stamp-box{
+    border: 6px solid var(--stamp-red);
+    color: var(--stamp-red);
+    background: rgba(237,238,227,0.92);
+    padding: 22px 34px;
+    border-radius: 10px;
+    text-align: center;
+    transform: rotate(-8deg) scale(1);
+    font-family: var(--font-mono);
+  }
+  #pdcTierUp .stamp-box .l1{ font-size: 14px; letter-spacing: 2px; font-weight: 700; }
+  #pdcTierUp .stamp-box .l2{ font-size: 30px; font-weight: 700; margin-top: 4px; }
+  #pdcTierUp.showing .stamp-box{ animation: pdcStampIn 1.7s ease forwards; }
+
+  @keyframes pdcStampIn{
+    0%   { opacity: 0; transform: rotate(-25deg) scale(2.4); }
+    14%  { opacity: 1; transform: rotate(-8deg) scale(1); }
+    78%  { opacity: 1; transform: rotate(-8deg) scale(1); }
+    100% { opacity: 0; transform: rotate(-8deg) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #pdcTierUp.showing .stamp-box{ animation: pdcStampFade 1.7s ease forwards; }
+    @keyframes pdcStampFade{
+      0%{opacity:0;} 14%{opacity:1;} 78%{opacity:1;} 100%{opacity:0;}
+    }
+    .pdc-swatch:hover{ transform:none; }
+  }
+
+  /* ============================================================
+     DEV MODE MODULE — styles (kept in this same block on purpose
+     so they are easy to find, but only used by dev-mode-module.js)
+     ============================================================ */
+  #pdcDevToggle{
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 60;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-faint);
+    background: var(--paper);
+    opacity: 0.55;
+    font-size: 16px;
+  }
+  #pdcDevToggle:hover{ opacity: 1; }
+  #pdcDevPanel{
+    position: fixed;
+    bottom: 64px;
+    right: 16px;
+    z-index: 61;
+    width: 300px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: 3px 5px 0 rgba(27,27,23,0.25);
+    display: none;
+  }
+  #pdcDevPanel.open{ display: block; }
+  #pdcDevPanel h3{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--stamp-red);
+    margin: 0 0 4px;
+  }
+  #pdcDevPanel .dev-sub{
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+  }
+  #pdcDevPanel .dev-row{ margin-bottom: 10px; }
+  #pdcDevPanel label{
+    display:block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  #pdcDevPanel button, #pdcDevPanel select, #pdcDevPanel input{
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    background: #fff;
+  }
+  #pdcDevPanel button{
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    cursor: pointer;
+  }
+  #pdcDevPanel button:hover{ background: #000; }
+  #pdcDevPanel button.danger{ background: var(--stamp-red); }
+  #pdcDevPanel button.danger:hover{ background: var(--stamp-red-dk); }
+  #pdcDevPanel textarea{
+    width: 100%;
+    height: 120px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    border: 1px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 6px;
+  }
+  #pdcDevPanel .inline-row{ display:flex; gap:6px; }
+  #pdcDevPanel .inline-row input{ flex: 1; }
+  #pdcDevPanel .inline-row button{ flex: 1; }
+  #pdcDevStatus{
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    border-top: 1px dashed var(--ink-faint);
+    padding-top: 8px;
+  }
+
+  /* ============================================================
+     INFINITE BALANCE MODULE — styles (only used by
+     infinite-balance-module.js)
+     ============================================================ */
+  #pdcInfiniteToggle{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    border: 1px dashed var(--ink-faint);
+    border-radius: 12px;
+    padding: 4px 9px;
+    cursor: pointer;
+    user-select: none;
+  }
+  #pdcInfiniteToggle .dot{
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+  }
+  #pdcInfiniteToggle.active{
+    border-color: var(--ok-green);
+    color: var(--ok-green);
+  }
+  #pdcInfiniteToggle.active .dot{ background: var(--ok-green); }
+</style>
+</head>
+<body>
+
+<div class="pdc-app">
+
+  <header class="pdc-header">
+    <div class="pdc-title-block">
+      <h1>Pixel <span class="dollar">$</span> Tab</h1>
+      <p>$1 buys one square. Pick a color, leave a caption, stamp your mark. Sell out the grid and it grows ×10.</p>
+    </div>
+    <div class="pdc-stats">
+      <div class="pdc-stat">
+        <span class="label">Sold</span>
+        <span class="value" id="statSold">0</span>
+      </div>
+      <div class="pdc-stat">
+        <span class="label">Capacity</span>
+        <span class="value accent" id="statCapacity">1</span>
+      </div>
+      <div class="pdc-stat">
+        <span class="label">Price each</span>
+        <span class="value" id="statPrice">$1.00</span>
+      </div>
+    </div>
+    <div class="pdc-wallet">
+      <div class="pdc-wallet-tag">
+        <span class="label">Your tab</span>
+        <span class="amount" id="walletAmount">$0.00</span>
+      </div>
+      <div class="pdc-wallet-actions">
+        <button class="btn-mini" id="addFundsBtn" type="button">+ $10 (demo)</button>
+        <span id="infiniteBalanceMount"></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="pdc-panel">
+    <div class="pdc-canvas-scroll" id="canvasScroll">
+      <canvas id="pixelCanvas" tabindex="0" aria-label="Pixel canvas. Click a square to buy it."></canvas>
+    </div>
+    <div class="pdc-panel-foot">
+      <span id="footLeft">cols: —</span>
+      <span id="footRight">hover a square for details</span>
+    </div>
+  </div>
+
+  <div class="pdc-legend">
+    <p><strong>How it works:</strong> every square starts blank. Click an empty one to buy it for $1 — pick any
+    color (presets, the color wheel, or paste a hex code) and leave an optional caption. The moment every square
+    is sold, the whole canvas grows ×10 and stays exactly as it was — nothing gets erased.</p>
+    <p class="demo-note">This is a working demo: balances are play money tracked in this browser, not a real
+    payment system. No real charges happen anywhere on this page.</p>
+  </div>
+
+  <div id="devModeMount"></div>
+</div>
+
+<!-- Tooltip -->
+<div id="pdcTooltip"></div>
+
+<!-- Buy modal -->
+<div class="pdc-modal-overlay" id="modalOverlay">
+  <div class="pdc-modal">
+    <h2 id="modalTitle">Buy square #0</h2>
+    <p class="sub">$1.00 · pick a color and add a caption if you'd like</p>
+
+    <div class="pdc-field">
+      <label>Color</label>
+      <div class="pdc-swatches" id="swatchRow"></div>
+      <div class="pdc-color-row">
+        <input type="color" id="colorPicker" value="#C8432D" aria-label="Pick a color">
+        <input type="text" id="hexInput" value="#C8432D" maxlength="7" placeholder="#RRGGBB" aria-label="Hex code">
+      </div>
+      <div class="pdc-error" id="colorError"></div>
+    </div>
+
+    <div class="pdc-field">
+      <label>Your name (optional)</label>
+      <input type="text" id="ownerInput" maxlength="24" placeholder="Anonymous">
+    </div>
+
+    <div class="pdc-field">
+      <label>Caption (optional)</label>
+      <input type="text" id="messageInput" maxlength="60" placeholder="Say something with your square">
+    </div>
+
+    <div class="pdc-error" id="purchaseError"></div>
+
+    <div class="pdc-modal-actions">
+      <button class="btn-ghost" id="cancelBuyBtn" type="button">Cancel</button>
+      <button class="btn-stamp" id="confirmBuyBtn" type="button">Stamp it — $1.00</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tier-up celebration overlay -->
+<div id="pdcTierUp">
+  <div class="stamp-box">
+    <div class="l1">SOLD OUT — TIER UP</div>
+    <div class="l2" id="tierUpNumber">10</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CORE APPLICATION SCRIPT
+     ============================================================ -->
+<script id="core-app">
+(function(){
+  "use strict";
+
+  /* ---------- Config ---------- */
+  var CONFIG = {
+    PRICE: 1.00,
+    START_BALANCE: 20.00,
+    CELL: 18,
+    MIN_COLS: 20,
+    MAX_COLS: 48,
+    MAX_CAPACITY: 1000000, // soft ceiling so a browser tab can't be asked to track an unbounded array
+    STORAGE_KEY_CANVAS: 'pixel-tab-canvas-v1',
+    STORAGE_KEY_BALANCE: 'pixel-tab-balance-v1'
+  };
+
+  var COLORS = {
+    cellEmpty: '#FAFAF4',
+    cellGrid:  '#D7DBC8',
+    hoverRing: '#1B1B17'
+  };
+
+  var PRESET_COLORS = [
+    '#1B1B17', '#FFFFFF', '#C8432D', '#2F6B4F',
+    '#2E5FA3', '#D9A536', '#7A2E8C', '#13988A',
+    '#F2542D', '#5B5F97', '#FF3CAC', '#E3E3DA'
+  ];
+
+  /* ---------- Storage bridge (graceful fallback to in-memory) ---------- */
+  var StorageBridge = {
+    _mem: {},
+    async get(key, shared){
+      try{
+        if (window.storage && typeof window.storage.get === 'function'){
+          var res = await window.storage.get(key, !!shared);
+          return res ? res.value : null;
+        }
+      }catch(e){ /* key missing or storage unavailable — fall through */ }
+      return Object.prototype.hasOwnProperty.call(this._mem, key) ? this._mem[key] : null;
+    },
+    async set(key, value, shared){
+      this._mem[key] = value;
+      try{
+        if (window.storage && typeof window.storage.set === 'function'){
+          await window.storage.set(key, value, !!shared);
+          return true;
+        }
+      }catch(e){
+        console.warn('PixelTab: storage write failed, continuing session-only for key', key, e);
+      }
+      return false;
+    }
+  };
+
+  /* ---------- Pure canvas/economy logic (unit-tested separately before integration) ---------- */
+  function isFull(state){
+    for (var i = 0; i < state.pixels.length; i++){
+      if (state.pixels[i] === null) return false;
+    }
+    return true;
+  }
+  function expandState(state){
+    if (state.capacity >= CONFIG.MAX_CAPACITY) return false;
+    var newCapacity = state.capacity * 10;
+    while (state.pixels.length < newCapacity) state.pixels.push(null);
+    state.capacity = newCapacity;
+    return true;
+  }
+  function normalizeHex(raw){
+    if (!raw) return null;
+    var v = raw.trim();
+    if (v[0] !== '#') v = '#' + v;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(v)) return null;
+    return v.toUpperCase();
+  }
+
+  /* ---------- App state ---------- */
+  var state = null;       // { version, cols, capacity, pixels: [...] }
+  var balance = 0;
+  var hoveredIndex = -1;
+  var pendingIndex = -1;
+  var ctx = null;
+  var canvas = null;
+
+  function computeInitialCols(){
+    var avail = Math.min(window.innerWidth - 80, 760);
+    var cols = Math.floor(avail / CONFIG.CELL);
+    return Math.max(CONFIG.MIN_COLS, Math.min(CONFIG.MAX_COLS, cols));
+  }
+
+  async function loadState(){
+    var raw = await StorageBridge.get(CONFIG.STORAGE_KEY_CANVAS, true);
+    if (raw){
+      try{
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.pixels) && parsed.capacity){
+          return parsed;
+        }
+      }catch(e){ console.warn('PixelTab: corrupt canvas state, starting fresh', e); }
+    }
+    var fresh = { version: 1, cols: computeInitialCols(), capacity: 1, pixels: [null] };
+    await saveState(fresh);
+    return fresh;
+  }
+  async function saveState(s){
+    await StorageBridge.set(CONFIG.STORAGE_KEY_CANVAS, JSON.stringify(s), true);
+  }
+
+  async function loadBalance(){
+    var raw = await StorageBridge.get(CONFIG.STORAGE_KEY_BALANCE, false);
+    if (raw !== null && raw !== undefined){
+      var n = parseFloat(raw);
+      if (!isNaN(n)) return n;
+    }
+    await saveBalance(CONFIG.START_BALANCE);
+    return CONFIG.START_BALANCE;
+  }
+  async function saveBalance(n){
+    balance = n;
+    await StorageBridge.set(CONFIG.STORAGE_KEY_BALANCE, String(n), false);
+    refreshWalletUI();
+  }
+
+  /* ---------- Rendering ---------- */
+  function setupCanvasSize(){
+    var rows = Math.ceil(state.capacity / state.cols);
+    // When there's only a single (partial) row, size the canvas to the actual
+    // number of squares that exist instead of the full column width — otherwise
+    // early tiers (capacity 1, 10...) render as a mostly-empty bar.
+    var displayW = (rows === 1 ? state.capacity : state.cols) * CONFIG.CELL;
+    var displayH = rows * CONFIG.CELL;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(displayW * dpr);
+    canvas.height = Math.floor(displayH * dpr);
+    canvas.style.width = displayW + 'px';
+    canvas.style.height = displayH + 'px';
+    ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawCell(index){
+    if (index < 0 || index >= state.pixels.length) return;
+    var col = index % state.cols;
+    var row = Math.floor(index / state.cols);
+    var x = col * CONFIG.CELL;
+    var y = row * CONFIG.CELL;
+    var px = state.pixels[index];
+
+    ctx.fillStyle = COLORS.cellGrid;
+    ctx.fillRect(x, y, CONFIG.CELL, CONFIG.CELL);
+
+    ctx.fillStyle = px ? px.color : COLORS.cellEmpty;
+    ctx.fillRect(x + 1, y + 1, CONFIG.CELL - 2, CONFIG.CELL - 2);
+
+    if (index === hoveredIndex){
+      ctx.strokeStyle = COLORS.hoverRing;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1.5, y + 1.5, CONFIG.CELL - 3, CONFIG.CELL - 3);
+    }
+  }
+
+  function renderAll(){
+    setupCanvasSize();
+    for (var i = 0; i < state.pixels.length; i++) drawCell(i);
+    refreshStatsUI();
+  }
+
+  function refreshStatsUI(){
+    var sold = 0;
+    for (var i = 0; i < state.pixels.length; i++) if (state.pixels[i]) sold++;
+    document.getElementById('statSold').textContent = sold;
+    document.getElementById('statCapacity').textContent = state.capacity;
+    document.getElementById('statPrice').textContent = '$' + CONFIG.PRICE.toFixed(2);
+    document.getElementById('footLeft').textContent = 'cols: ' + state.cols;
+  }
+
+  function refreshWalletUI(){
+    var isInfinite = window.InfiniteBalance && window.InfiniteBalance.isEnabled();
+    document.getElementById('walletAmount').textContent = isInfinite ? '∞' : ('$' + balance.toFixed(2));
+  }
+
+  /* ---------- Pointer math ---------- */
+  function indexFromEvent(evt){
+    var rect = canvas.getBoundingClientRect();
+    var x = evt.clientX - rect.left;
+    var y = evt.clientY - rect.top;
+    var col = Math.floor(x / CONFIG.CELL);
+    var row = Math.floor(y / CONFIG.CELL);
+    if (col < 0 || row < 0 || col >= state.cols) return -1;
+    var index = row * state.cols + col;
+    if (index >= state.pixels.length) return -1;
+    return index;
+  }
+
+  function onCanvasMove(evt){
+    var idx = indexFromEvent(evt);
+    if (idx === hoveredIndex) {
+      positionTooltip(evt, idx);
+      return;
+    }
+    var prev = hoveredIndex;
+    hoveredIndex = idx;
+    if (prev !== -1) drawCell(prev);
+    if (idx !== -1) drawCell(idx);
+    positionTooltip(evt, idx);
+  }
+  function onCanvasLeave(){
+    var prev = hoveredIndex;
+    hoveredIndex = -1;
+    if (prev !== -1) drawCell(prev);
+    document.getElementById('pdcTooltip').style.display = 'none';
+  }
+
+  function positionTooltip(evt, idx){
+    var tip = document.getElementById('pdcTooltip');
+    if (idx === -1){ tip.style.display = 'none'; return; }
+    var px = state.pixels[idx];
+    if (px){
+      tip.innerHTML = '<span class="swatch" style="background:' + px.color + '"></span>#' + idx +
+        ' — sold by ' + escapeHtml(px.owner || 'Anonymous') +
+        (px.message ? ('<br>"' + escapeHtml(px.message) + '"') : '');
+    } else {
+      tip.innerHTML = '#' + idx + ' — free · click to buy for $' + CONFIG.PRICE.toFixed(2);
+    }
+    tip.style.display = 'block';
+    var left = evt.clientX + 14;
+    var top = evt.clientY + 14;
+    if (left + 230 > window.innerWidth) left = evt.clientX - 230;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function onCanvasClick(evt){
+    var idx = indexFromEvent(evt);
+    if (idx === -1) return;
+    if (state.pixels[idx]) return; // already owned — info is shown on hover
+    openBuyModal(idx);
+  }
+
+  /* ---------- Buy modal ---------- */
+  var modalOverlay, hexInput, colorPicker, ownerInput, messageInput, colorError, purchaseError, confirmBuyBtn;
+
+  function openBuyModal(idx){
+    pendingIndex = idx;
+    document.getElementById('modalTitle').textContent = 'Buy square #' + idx;
+    colorError.textContent = '';
+    purchaseError.textContent = '';
+    hexInput.value = '#C8432D';
+    colorPicker.value = '#C8432D';
+    hexInput.classList.remove('invalid');
+    highlightSelectedSwatch('#C8432D');
+    messageInput.value = '';
+    modalOverlay.classList.add('open');
+    setTimeout(function(){ hexInput.focus(); }, 0);
+  }
+  function closeBuyModal(){
+    modalOverlay.classList.remove('open');
+    pendingIndex = -1;
+  }
+  function highlightSelectedSwatch(hex){
+    var swatches = document.querySelectorAll('.pdc-swatch');
+    swatches.forEach(function(btn){
+      btn.classList.toggle('selected', btn.dataset.hex === hex);
+    });
+  }
+
+  function buildSwatches(){
+    var row = document.getElementById('swatchRow');
+    PRESET_COLORS.forEach(function(hex){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pdc-swatch';
+      btn.style.background = hex;
+      btn.dataset.hex = hex;
+      btn.setAttribute('aria-label', 'Use color ' + hex);
+      btn.addEventListener('click', function(){
+        hexInput.value = hex;
+        colorPicker.value = hex;
+        hexInput.classList.remove('invalid');
+        colorError.textContent = '';
+        highlightSelectedSwatch(hex);
+      });
+      row.appendChild(btn);
+    });
+  }
+
+  async function confirmPurchase(){
+    var hex = normalizeHex(hexInput.value);
+    if (!hex){
+      colorError.textContent = 'That hex code doesn\'t look right — try something like #C8432D.';
+      hexInput.classList.add('invalid');
+      return;
+    }
+    if (pendingIndex === -1 || pendingIndex >= state.pixels.length || state.pixels[pendingIndex]){
+      purchaseError.textContent = 'This square just sold. Pick another one.';
+      return;
+    }
+
+    var infinite = window.InfiniteBalance && window.InfiniteBalance.isEnabled();
+    if (!infinite && balance < CONFIG.PRICE){
+      purchaseError.textContent = 'Your tab is short $' + (CONFIG.PRICE - balance).toFixed(2) + '. Add funds to keep buying.';
+      return;
+    }
+
+    confirmBuyBtn.disabled = true;
+    state.pixels[pendingIndex] = {
+      color: hex,
+      message: messageInput.value.trim().slice(0, 60),
+      owner: (ownerInput.value.trim() || 'Anonymous').slice(0, 24),
+      ts: Date.now()
+    };
+
+    if (!infinite){
+      await saveBalance(balance - CONFIG.PRICE);
+    }
+
+    drawCell(pendingIndex);
+    refreshStatsUI();
+
+    var expanded = false;
+    if (isFull(state)) expanded = expandState(state);
+
+    await saveState(state);
+    closeBuyModal();
+    confirmBuyBtn.disabled = false;
+
+    if (expanded) celebrateTierUp(state.capacity);
+    else if (state.capacity >= CONFIG.MAX_CAPACITY && isFull(state)) celebrateComplete();
+    else renderAll(); // canvas size unchanged but stats/footer need a refresh either way
+  }
+
+  function celebrateTierUp(newCapacity){
+    renderAll();
+    var overlay = document.getElementById('pdcTierUp');
+    document.getElementById('tierUpNumber').textContent = newCapacity;
+    overlay.style.display = 'flex';
+    overlay.classList.remove('showing');
+    void overlay.offsetWidth; // restart animation
+    overlay.classList.add('showing');
+    setTimeout(function(){
+      overlay.style.display = 'none';
+      overlay.classList.remove('showing');
+    }, 1750);
+  }
+
+  function celebrateComplete(){
+    renderAll();
+    var overlay = document.getElementById('pdcTierUp');
+    document.getElementById('tierUpNumber').textContent = 'MASTERPIECE COMPLETE';
+    overlay.style.display = 'flex';
+    overlay.classList.add('showing');
+    setTimeout(function(){
+      overlay.style.display = 'none';
+      overlay.classList.remove('showing');
+    }, 2400);
+  }
+
+  /* ---------- Wiring ---------- */
+  function wireHexColorSync(){
+    hexInput.addEventListener('input', function(){
+      var hex = normalizeHex(hexInput.value);
+      if (hex){
+        colorPicker.value = hex;
+        hexInput.classList.remove('invalid');
+        colorError.textContent = '';
+        highlightSelectedSwatch(hex);
+      } else {
+        hexInput.classList.add('invalid');
+      }
+    });
+    colorPicker.addEventListener('input', function(){
+      var hex = colorPicker.value.toUpperCase();
+      hexInput.value = hex;
+      hexInput.classList.remove('invalid');
+      colorError.textContent = '';
+      highlightSelectedSwatch(hex);
+    });
+  }
+
+  async function addDemoFunds(){
+    await saveBalance(balance + 10);
+  }
+
+  /* ---------- Public hook for the dev-mode and infinite-balance modules ---------- */
+  window.PDC = {
+    config: CONFIG,
+    getState: function(){ return state; },
+    getBalance: function(){ return balance; },
+    isFull: isFull,
+    async forceExpand(){
+      if (state.capacity >= CONFIG.MAX_CAPACITY) return false;
+      var newCapacity = state.capacity * 10;
+      while (state.pixels.length < newCapacity) state.pixels.push(null);
+      state.capacity = newCapacity;
+      await saveState(state);
+      renderAll();
+      return true;
+    },
+    async jumpToCapacity(n){
+      if (n < state.pixels.length){
+        state.pixels = state.pixels.slice(0, n);
+      } else {
+        while (state.pixels.length < n) state.pixels.push(null);
+      }
+      state.capacity = n;
+      await saveState(state);
+      renderAll();
+    },
+    async fillRandom(count){
+      var sample = ['#C8432D','#2F6B4F','#2E5FA3','#D9A536','#7A2E8C','#13988A','#F2542D'];
+      var filled = 0;
+      for (var i = 0; i < state.pixels.length && filled < count; i++){
+        if (!state.pixels[i]){
+          state.pixels[i] = {
+            color: sample[Math.floor(Math.random() * sample.length)],
+            message: 'dev fill',
+            owner: 'dev-tools',
+            ts: Date.now()
+          };
+          filled++;
+        }
+      }
+      var expanded = false;
+      if (isFull(state)) expanded = expandState(state);
+      await saveState(state);
+      renderAll();
+      return { filled: filled, expanded: expanded };
+    },
+    async resetCanvas(){
+      state = { version: 1, cols: state.cols, capacity: 1, pixels: [null] };
+      await saveState(state);
+      renderAll();
+    },
+    async resetBalance(){
+      await saveBalance(CONFIG.START_BALANCE);
+    },
+    async setBalance(n){
+      await saveBalance(n);
+    },
+    renderAll: renderAll,
+    refreshWalletUI: refreshWalletUI,
+    storageBacked: function(){ return !!(window.storage && typeof window.storage.get === 'function'); }
+  };
+
+  /* ---------- Init ---------- */
+  async function init(){
+    canvas = document.getElementById('pixelCanvas');
+    modalOverlay = document.getElementById('modalOverlay');
+    hexInput = document.getElementById('hexInput');
+    colorPicker = document.getElementById('colorPicker');
+    ownerInput = document.getElementById('ownerInput');
+    messageInput = document.getElementById('messageInput');
+    colorError = document.getElementById('colorError');
+    purchaseError = document.getElementById('purchaseError');
+    confirmBuyBtn = document.getElementById('confirmBuyBtn');
+
+    state = await loadState();
+    balance = await loadBalance();
+
+    buildSwatches();
+    wireHexColorSync();
+    renderAll();
+    refreshWalletUI();
+
+    canvas.addEventListener('mousemove', onCanvasMove);
+    canvas.addEventListener('mouseleave', onCanvasLeave);
+    canvas.addEventListener('click', onCanvasClick);
+
+    document.getElementById('cancelBuyBtn').addEventListener('click', closeBuyModal);
+    document.getElementById('confirmBuyBtn').addEventListener('click', function(){
+      confirmPurchase();
+    });
+    modalOverlay.addEventListener('click', function(e){
+      if (e.target === modalOverlay) closeBuyModal();
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeBuyModal();
+    });
+    document.getElementById('addFundsBtn').addEventListener('click', function(){
+      addDemoFunds();
+    });
+
+    if (!window.PDC.storageBacked()){
+      document.getElementById('footRight').textContent = 'session-only mode (no persistent storage detected)';
+    }
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+<!-- ============================================================
+     DEV MODE MODULE — entirely self-contained.
+     Builds its own toggle button + panel and talks to the core
+     app only through window.PDC. Delete this whole <script> tag
+     (and its matching CSS block above) to ship without it.
+     ============================================================ -->
+<script id="dev-mode-module">
+(function(){
+  "use strict";
+
+  function waitForPDC(cb){
+    if (window.PDC && window.PDC.getState && window.PDC.getState()){
+      cb();
+    } else {
+      setTimeout(function(){ waitForPDC(cb); }, 50);
+    }
+  }
+
+  function buildPanel(){
+    var mount = document.getElementById('devModeMount');
+    if (!mount) return;
+
+    var toggleBtn = document.createElement('button');
+    toggleBtn.id = 'pdcDevToggle';
+    toggleBtn.type = 'button';
+    toggleBtn.title = 'Dev tools';
+    toggleBtn.textContent = '⚙';
+    document.body.appendChild(toggleBtn);
+
+    var panel = document.createElement('div');
+    panel.id = 'pdcDevPanel';
+    panel.innerHTML =
+      '<h3>DEV TOOLS</h3>' +
+      '<div class="dev-sub">Testing only — not shown to real visitors of a production build.</div>' +
+
+      '<div class="dev-row">' +
+        '<label>Force expand canvas ×10</label>' +
+        '<button type="button" id="devForceExpand">Force expand now</button>' +
+      '</div>' +
+
+      '<div class="dev-row">' +
+        '<label>Auto-fill empty squares (random colors)</label>' +
+        '<div class="inline-row">' +
+          '<input type="number" id="devFillCount" value="20" min="1">' +
+          '<button type="button" id="devFillBtn">Auto-fill</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="dev-row">' +
+        '<label>Jump straight to a capacity tier</label>' +
+        '<select id="devCapacitySelect">' +
+          '<option value="1">1</option>' +
+          '<option value="10">10</option>' +
+          '<option value="100">100</option>' +
+          '<option value="1000">1,000</option>' +
+          '<option value="10000">10,000</option>' +
+          '<option value="100000">100,000</option>' +
+          '<option value="1000000">1,000,000</option>' +
+        '</select>' +
+        '<button type="button" id="devJumpBtn" style="margin-top:6px;">Jump</button>' +
+      '</div>' +
+
+      '<div class="dev-row">' +
+        '<button type="button" id="devResetCanvas" class="danger">Reset canvas (wipe all squares)</button>' +
+      '</div>' +
+      '<div class="dev-row">' +
+        '<button type="button" id="devResetBalance">Reset balance to $' + window.PDC.config.START_BALANCE.toFixed(2) + '</button>' +
+      '</div>' +
+
+      '<div class="dev-row">' +
+        '<label>Raw state (read-only)</label>' +
+        '<textarea id="devStateView" readonly></textarea>' +
+        '<button type="button" id="devRefreshState" style="margin-top:6px;">Refresh view</button>' +
+      '</div>' +
+
+      '<div id="pdcDevStatus"></div>';
+    document.body.appendChild(panel);
+
+    toggleBtn.addEventListener('click', function(){
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) refreshStateView();
+    });
+
+    document.getElementById('devForceExpand').addEventListener('click', async function(){
+      var ok = await window.PDC.forceExpand();
+      setStatus(ok ? 'Expanded to ' + window.PDC.getState().capacity + '.' : 'Already at the max capacity ceiling.');
+      refreshStateView();
+    });
+
+    document.getElementById('devFillBtn').addEventListener('click', async function(){
+      var n = parseInt(document.getElementById('devFillCount').value, 10) || 1;
+      var result = await window.PDC.fillRandom(n);
+      setStatus('Filled ' + result.filled + ' square(s).' + (result.expanded ? ' Canvas expanded!' : ''));
+      refreshStateView();
+    });
+
+    document.getElementById('devJumpBtn').addEventListener('click', async function(){
+      var n = parseInt(document.getElementById('devCapacitySelect').value, 10);
+      await window.PDC.jumpToCapacity(n);
+      setStatus('Jumped to capacity ' + n + '.');
+      refreshStateView();
+    });
+
+    document.getElementById('devResetCanvas').addEventListener('click', async function(){
+      if (!window.confirm('This wipes every square on the canvas. Continue?')) return;
+      await window.PDC.resetCanvas();
+      setStatus('Canvas reset to capacity 1.');
+      refreshStateView();
+    });
+
+    document.getElementById('devResetBalance').addEventListener('click', async function(){
+      await window.PDC.resetBalance();
+      setStatus('Balance reset.');
+    });
+
+    document.getElementById('devRefreshState').addEventListener('click', refreshStateView);
+
+    function refreshStateView(){
+      document.getElementById('devStateView').value = JSON.stringify(window.PDC.getState(), null, 2);
+    }
+    function setStatus(msg){
+      document.getElementById('pdcDevStatus').textContent = msg;
+    }
+
+    setStatus(window.PDC.storageBacked() ? 'Shared storage: connected.' : 'Shared storage: unavailable — session only.');
+  }
+
+  waitForPDC(buildPanel);
+})();
+</script>
+
+<!-- ============================================================
+     INFINITE BALANCE MODULE — entirely self-contained.
+     Injects its own toggle pill next to the wallet display and
+     exposes window.InfiniteBalance. The core app only ever checks
+     `window.InfiniteBalance && window.InfiniteBalance.isEnabled()`,
+     so deleting this whole <script> tag (and its CSS block above)
+     leaves the rest of the app working normally with real balances.
+     ============================================================ -->
+<script id="infinite-balance-module">
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'pixel-tab-infinite-balance-v1';
+  var enabled = false;
+
+  function waitForPDC(cb){
+    if (window.PDC && window.PDC.getState && window.PDC.getState()){
+      cb();
+    } else {
+      setTimeout(function(){ waitForPDC(cb); }, 50);
+    }
+  }
+
+  async function loadPref(){
+    try{
+      if (window.storage && typeof window.storage.get === 'function'){
+        var res = await window.storage.get(STORAGE_KEY, false);
+        return res && res.value === 'true';
+      }
+    }catch(e){ /* no saved preference yet */ }
+    return false;
+  }
+  async function savePref(val){
+    try{
+      if (window.storage && typeof window.storage.set === 'function'){
+        await window.storage.set(STORAGE_KEY, String(val), false);
+      }
+    }catch(e){ /* session-only fallback, nothing else to do */ }
+  }
+
+  function buildToggle(){
+    var mount = document.getElementById('infiniteBalanceMount');
+    if (!mount) return;
+
+    var pill = document.createElement('span');
+    pill.id = 'pdcInfiniteToggle';
+    pill.setAttribute('role', 'switch');
+    pill.setAttribute('tabindex', '0');
+    pill.innerHTML = '<span class="dot"></span><span class="lbl">∞ balance (test)</span>';
+    mount.appendChild(pill);
+
+    function applyVisual(){
+      pill.classList.toggle('active', enabled);
+      pill.setAttribute('aria-checked', String(enabled));
+      window.PDC.refreshWalletUI();
+    }
+
+    async function toggle(){
+      enabled = !enabled;
+      await savePref(enabled);
+      applyVisual();
+    }
+
+    pill.addEventListener('click', toggle);
+    pill.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+
+    window.InfiniteBalance = {
+      isEnabled: function(){ return enabled; },
+      toggle: toggle
+    };
+
+    applyVisual();
+  }
+
+  waitForPDC(async function(){
+    enabled = await loadPref();
+    buildToggle();
+  });
+})();
+</script>
+
+</body>
+</html>
